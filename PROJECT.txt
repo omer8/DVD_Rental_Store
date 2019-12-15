@@ -1,0 +1,81 @@
+Q1:What is the movies that families are watching?
+
+SELECT sub.film_title,sub.category_name,count(*) AS rental_count
+FROM (SELECT f.film_id AS film_id,
+       f.title as film_title,
+       cat.name as category_name
+       FROM category cat 
+       JOIN film_category f_cat
+       ON cat.category_id = f_cat.category_id
+       JOIN film f
+       ON f_cat.film_id = f.film_id
+       WHERE cat.name IN ('Animation','Childeren','Classic','Comedy','Music','Family') ) sub
+JOIN inventory inv
+ON sub.film_id = inv.film_id
+JOIN rental r
+ON r.inventory_id = inv.inventory_id
+GROUP BY 1,2
+ORDER BY 2
+
+ 
+        ********************************************************************************************************************
+Q2: Who is the top 10 payment customer and how many payments they made on a monthly basis during 2007, and what was the amount of the monthly payments?
+
+select CONCAT(first_name,' ',last_name) full_name,date_trunc('month',payment_date) date,
+count(*) month_count,sum(amount) pay_mount
+from customer cus
+join payment pay
+on pay.customer_id = cus.customer_id
+where  CONCAT(first_name,' ',last_name) in
+( select full_n
+  from
+(select 
+    CONCAT(first_name,' ',last_name) full_n,
+    sum(amount) sum_mou
+     from payment
+     join customer 
+     on payment.customer_id= customer.customer_id
+     group by 1
+     order by 2 desc
+     limit 10 ) sub ) 
+group by 1,2
+order by 1
+
+         ********************************************************************************************************************
+
+Q3: Who is the top 10 actor whose films most rented?
+
+select actor_id,full_name,count(*)
+from
+  (select a.actor_id actor_id,
+   CONCAT(first_name,' ',last_name) full_name,
+   f.title
+   from actor a
+   join film_actor fa
+   on fa.actor_id = a.actor_id
+   join film f
+   on f.film_id = fa.film_id
+   join inventory inv
+   on inv.film_id=f.film_id
+   join rental r
+   on inv.inventory_id=r.inventory_id) sub
+group by 1,2
+order by 3 desc
+limit 10
+
+          *******************************************************************************************************************
+
+Q4: What is the total payment amount per month ?
+  
+select ROW_NUMBER() OVER (order by month),sub.*
+from
+(  select date_trunc('month',payment_date) as month,st.store_id,
+   sum(amount)  as amount_month
+   from payment p
+   join staff s
+   on p.staff_id = s.staff_id
+   join store st
+   on st.store_id = s.store_id
+   
+   group by 1,2
+   order by 1) sub
